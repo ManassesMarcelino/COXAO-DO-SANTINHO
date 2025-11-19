@@ -21,7 +21,6 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginSenha, setLoginSenha] = useState("");
 
-  // Login
   const doLogin = async (e) => {
     e?.preventDefault();
     if (!notEmpty(loginEmail) || !notEmpty(loginSenha)) {
@@ -51,7 +50,6 @@ export default function App() {
     setView("login");
   };
 
-  // Produtos
   const [produtos, setProdutos] = useState([]);
   const [loadingProdutos, setLoadingProdutos] = useState(false);
   const [q, setQ] = useState("");
@@ -157,7 +155,6 @@ export default function App() {
     await carregarProdutos(q);
   };
 
-  // Movimentação
   const [movProdutoId, setMovProdutoId] = useState("");
   const [movTipo, setMovTipo] = useState("entrada");
   const [movQuantidade, setMovQuantidade] = useState("");
@@ -193,10 +190,9 @@ export default function App() {
     }
   };
 
-  // -------------------
   return (
     <div className="app-container">
-      <h1>Meia Meia Meia — Gestão de Estoque</h1>
+      <h1>Gestão de Estoque</h1>
 
       {view === "login" && (
         <section className="form">

@@ -1,31 +1,25 @@
-// server.js — mini backend "meia meia meia" (Prova SAEP)
-// npm i express cors pg
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
 const pool = new Pool({
-  user: 'postgres',            // <-- ajuste aqui
-  password: 'VitorManasses',        // <-- ajuste aqui
+  user: 'postgres',            
+  password: 'VitorManasses',        
   host: 'localhost',
   port: 5432,
-  database: 'saep_db',         // banco exigido pela prova
+  database: 'saep_db',         
 });
 
 app.use(cors());
 app.use(express.json());
 
-// util simples
 const ok = (res, data) => res.json(data);
 const fail = (res, err, code = 500) => {
   console.error(err);
   res.status(code).json({ error: typeof err === 'string' ? err : 'Erro interno' });
 };
 
-// -----------------------------
-// HEALTHCHECK
-// -----------------------------
 app.get('/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -33,11 +27,6 @@ app.get('/health', async (_req, res) => {
   } catch (e) { console.log(e.error) ; fail(res, e); }
 });
 
-// -----------------------------
-// USUÁRIOS (divulgadores)
-// -----------------------------
-
-// cadastro de usuário (nome, email, senha)
 app.post('/usuarios', async (req, res) => {
   const { nome, email, senha } = req.body || {};
   if (!nome || !email || !senha) return fail(res, 'Campos obrigatórios: nome, email, senha', 400);
@@ -55,7 +44,6 @@ app.post('/usuarios', async (req, res) => {
   }
 });
 
-// login simples (sem sessão/JWT — retorna o usuário se credenciais ok)
 app.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body || {};
   if (!email || !senha) return fail(res, 'Informe email e senha', 400);
@@ -69,11 +57,6 @@ app.post('/auth/login', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// -----------------------------
-// PRODUTOS (modelos de meias)
-// -----------------------------
-
-// listar produtos (ordem alfabética, busca opcional ?q=)
 app.get('/produtos', async (req, res) => {
   const q = (req.query.q || '').trim();
   const hasQ = q.length > 0;
@@ -90,7 +73,6 @@ app.get('/produtos', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// obter 1 produto
 app.get('/produtos/:id', async (req, res) => {
   try {
     const r = await pool.query(
@@ -104,7 +86,6 @@ app.get('/produtos/:id', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// criar produto
 app.post('/produtos', async (req, res) => {
   const { nome, quantidade = 0, estoque_minimo = 0 } = req.body || {};
   if (!nome) return fail(res, 'Campo obrigatório: nome', 400);
@@ -119,7 +100,6 @@ app.post('/produtos', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// atualizar produto
 app.put('/produtos/:id', async (req, res) => {
   const { nome, quantidade, estoque_minimo } = req.body || {};
   try {
@@ -137,7 +117,6 @@ app.put('/produtos/:id', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// deletar produto
 app.delete('/produtos/:id', async (req, res) => {
   try {
     const r = await pool.query('DELETE FROM produtos WHERE id=$1 RETURNING id', [req.params.id]);
@@ -146,11 +125,6 @@ app.delete('/produtos/:id', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// -----------------------------
-// MOVIMENTAÇÕES (entrada/saída)
-// -----------------------------
-
-// criar movimentação + atualizar saldo do produto (transação simples)
 app.post('/movimentacoes', async (req, res) => {
   const { produto_id, usuario_id, tipo, quantidade, data_movimentacao, observacao } = req.body || {};
   if (!produto_id || !usuario_id || !tipo || !quantidade)
@@ -164,8 +138,6 @@ app.post('/movimentacoes', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    // atualiza saldo
     const up = await client.query(
       'UPDATE produtos SET quantidade = quantidade + $1 WHERE id=$2 RETURNING id, nome, quantidade, estoque_minimo',
       [delta, produto_id]
@@ -176,7 +148,6 @@ app.post('/movimentacoes', async (req, res) => {
       return fail(res, 'Produto não encontrado', 404);
     }
 
-    // registra movimento
     const ins = await client.query(
       `INSERT INTO movimentacoes (produto_id, usuario_id, tipo, quantidade, data_movimentacao, observacao)
        VALUES ($1,$2,$3,$4,COALESCE($5, NOW()),$6)
@@ -201,7 +172,6 @@ app.post('/movimentacoes', async (req, res) => {
   }
 });
 
-// histórico geral ou filtrado por produto (?produto_id=)
 app.get('/movimentacoes', async (req, res) => {
   const { produto_id } = req.query;
   const hasFilter = !!produto_id;
@@ -221,8 +191,6 @@ app.get('/movimentacoes', async (req, res) => {
   } catch (e) { fail(res, e); }
 });
 
-// -----------------------------
-// START
-// -----------------------------
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
